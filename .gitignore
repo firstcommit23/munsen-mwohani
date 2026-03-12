@@ -1,0 +1,28 @@
+# 보안 파일 — 절대 커밋하지 말 것
+.env
+credentials.json
+token.json
+claude.md
+
+# 임시 작업 공간
+.tmp/
+
+# macOS
+.DS_Store
+
+# Claude Code 로컬 설정
+.claude/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+
+# DB는 Railway 볼륨에서 관리 (로컬 개발용은 커밋 안 함)
+data/classes.db
