@@ -1,4 +1,5 @@
 import { SearchX, Loader2 } from "lucide-react";
+import type { RefObject } from "react";
 import type { ClassItem } from "../types";
 import ClassCard from "./ClassCard";
 
@@ -6,10 +7,13 @@ interface Props {
   results: ClassItem[];
   total: number;
   loading: boolean;
+  loadingMore: boolean;
   searched: boolean;
+  hasMore: boolean;
+  sentinelRef: RefObject<HTMLDivElement | null>;
 }
 
-export default function SearchResults({ results, total, loading, searched }: Props) {
+export default function SearchResults({ results, total, loading, loadingMore, searched, hasMore, sentinelRef }: Props) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
@@ -50,14 +54,25 @@ export default function SearchResults({ results, total, loading, searched }: Pro
       <p className="text-xs text-slate-400 mb-3 font-medium">
         총 <span className="text-blue-600 font-semibold">{total.toLocaleString()}개</span> 강좌
       </p>
+
       <div className="flex flex-col gap-3">
         {results.map((item) => (
           <ClassCard key={item.id} item={item} />
         ))}
       </div>
-      {results.length < total && (
-        <p className="text-center text-xs text-slate-400 mt-4">
-          {total - results.length}개 더 있어요 (페이지네이션 준비 중)
+
+      {/* 무한 스크롤 sentinel */}
+      <div ref={sentinelRef} className="h-4" />
+
+      {loadingMore && (
+        <div className="flex justify-center py-4">
+          <Loader2 size={20} className="animate-spin text-blue-400" />
+        </div>
+      )}
+
+      {!hasMore && results.length > 0 && results.length >= total && (
+        <p className="text-center text-xs text-slate-400 mt-4 pb-2">
+          모든 강좌를 불러왔어요
         </p>
       )}
     </div>
