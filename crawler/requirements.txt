@@ -1,5 +1,0 @@
-requests==2.32.3
-beautifulsoup4==4.12.3
-python-dotenv==1.0.1
-# playwright는 Python 3.12 이하에서만 동작
-# pip install playwright && playwright install chromium

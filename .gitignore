@@ -7,6 +7,9 @@ claude.md
 # 임시 작업 공간
 .tmp/
 
+# 크롤러 — 로컬에서만 실행, 공개하지 않음
+crawler/
+
 # macOS
 .DS_Store
 
@@ -24,5 +27,5 @@ frontend/node_modules/
 frontend/dist/
 frontend/.env.local
 
-# DB는 Railway 볼륨에서 관리 (로컬 개발용은 커밋 안 함)
-data/classes.db
+# DB 파일은 크롤러 실행 후 커밋해서 Rail.way에 배포
+# data/classes.db  ← 주석 처리 (커밋 대상에 포함)
