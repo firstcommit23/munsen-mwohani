@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { SearchX, Loader2 } from "lucide-react";
 import type { RefObject } from "react";
 import type { ClassItem } from "../types";
@@ -11,9 +12,18 @@ interface Props {
   searched: boolean;
   hasMore: boolean;
   sentinelRef: RefObject<HTMLDivElement | null>;
+  categorySummary: Record<string, number>;
+  selectedCategory: string | null;
+  onSelectCategory: (cat: string | null) => void;
 }
 
-export default function SearchResults({ results, total, loading, loadingMore, searched, hasMore, sentinelRef }: Props) {
+export default function SearchResults({ results, total, loading, loadingMore, searched, hasMore, sentinelRef, categorySummary, selectedCategory, onSelectCategory }: Props) {
+  const topCategories = useMemo(() => Object.entries(categorySummary).slice(0, 10), [categorySummary]);
+  const filtered = useMemo(
+    () => selectedCategory ? results.filter((r) => (r.category ?? "기타") === selectedCategory) : results,
+    [results, selectedCategory]
+  );
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
@@ -55,8 +65,27 @@ export default function SearchResults({ results, total, loading, loadingMore, se
         총 <span className="text-blue-600 font-semibold">{total.toLocaleString()}개</span> 강좌
       </p>
 
+      {/* 카테고리 칩 */}
+      {topCategories.length > 0 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-none">
+          {topCategories.map(([cat, count]) => (
+            <button
+              key={cat}
+              onClick={() => onSelectCategory(selectedCategory === cat ? null : cat)}
+              className={`shrink-0 text-xs px-2.5 py-1 rounded-full border font-medium transition-all whitespace-nowrap ${
+                selectedCategory === cat
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "bg-white text-slate-500 border-slate-200 hover:border-blue-400"
+              }`}
+            >
+              {cat} <span className={selectedCategory === cat ? "text-blue-200" : "text-slate-400"}>{count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="flex flex-col gap-3">
-        {results.map((item) => (
+        {filtered.map((item) => (
           <ClassCard key={item.id} item={item} />
         ))}
       </div>

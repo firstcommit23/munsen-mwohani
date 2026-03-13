@@ -53,7 +53,7 @@ export default function FilterPanel({ location, filters, onChange, onSearch, loa
             <span className="font-semibold text-slate-900 text-sm">{location.label}</span>
           </div>
           <div className="flex gap-2">
-            {([1, 10] as RadiusOption[]).map((r) => (
+            {([1, 5, 10] as RadiusOption[]).map((r) => (
               <button
                 key={r}
                 onClick={() => set({ radius: r })}

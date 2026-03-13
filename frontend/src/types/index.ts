@@ -16,6 +16,7 @@ export interface ClassItem {
   end_date: string | null;
   total_sessions: number | null;
   class_type: "정규" | "원데이";
+  age_range: string | null;
   image_url: string | null;
   detail_url: string | null;
   last_updated: string | null;
@@ -26,13 +27,14 @@ export interface SearchResponse {
   page: number;
   page_size: number;
   results: ClassItem[];
+  category_summary: Record<string, number>;
 }
 
 export type Target = "성인" | "어린이" | "영아";
 export type DayOfWeek = "월" | "화" | "수" | "목" | "금" | "토" | "일";
 export type TimeSlot = "오전" | "오후" | "17시이후";
 export type ClassType = "정규" | "원데이";
-export type RadiusOption = 1 | 10;
+export type RadiusOption = 1 | 5 | 10;
 
 export interface Filters {
   radius: RadiusOption;

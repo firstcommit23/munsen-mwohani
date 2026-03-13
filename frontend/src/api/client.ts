@@ -24,3 +24,12 @@ export async function searchClasses(
   const { data } = await axios.get<SearchResponse>(`${BASE}/api/search`, { params });
   return data;
 }
+
+export async function getLastUpdated(): Promise<string | null> {
+  try {
+    const { data } = await axios.get<{ last_updated: string | null }>(`${BASE}/api/last-updated`);
+    return data.last_updated;
+  } catch {
+    return null;
+  }
+}

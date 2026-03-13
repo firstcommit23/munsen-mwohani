@@ -133,10 +133,18 @@ def search_classes(
     results.sort(key=lambda x: (x["distance_km"] or 999, x["title"]))
 
     total = len(results)
+
+    # 카테고리별 건수 집계 (전체 결과 기준)
+    category_summary: dict = {}
+    for r in results:
+        cat = r.get("category") or "기타"
+        category_summary[cat] = category_summary.get(cat, 0) + 1
+    category_summary = dict(sorted(category_summary.items(), key=lambda x: -x[1]))
+
     offset = (page - 1) * page_size
     paginated = results[offset: offset + page_size]
 
-    return {"total": total, "page": page, "page_size": page_size, "results": paginated}
+    return {"total": total, "page": page, "page_size": page_size, "results": paginated, "category_summary": category_summary}
 
 
 @app.get("/api/stores")
@@ -159,6 +167,14 @@ def get_stores(
 
     result.sort(key=lambda x: x["distance_km"])
     return result
+
+
+@app.get("/api/last-updated")
+def last_updated():
+    conn = get_connection()
+    row = conn.execute("SELECT MAX(last_updated) AS ts FROM classes").fetchone()
+    conn.close()
+    return {"last_updated": row["ts"] if row else None}
 
 
 @app.get("/api/health")

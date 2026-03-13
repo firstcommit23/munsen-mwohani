@@ -45,6 +45,7 @@ def init_db():
             end_date       TEXT,            -- '2026.03.03'
             total_sessions INTEGER,
             class_type     TEXT,            -- '정규' | '원데이'
+            age_range      TEXT,            -- '5~10개월' (영아 수업)
             image_url      TEXT,
             detail_url     TEXT,
             last_updated   TEXT
@@ -54,6 +55,13 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_classes_target ON classes(target);
         CREATE INDEX IF NOT EXISTS idx_classes_type ON classes(class_type);
     """)
+
+    # 기존 DB 마이그레이션: age_range 컬럼 추가
+    try:
+        cursor.execute("ALTER TABLE classes ADD COLUMN age_range TEXT")
+        conn.commit()
+    except Exception:
+        pass  # 이미 존재하면 무시
 
     conn.commit()
     conn.close()
