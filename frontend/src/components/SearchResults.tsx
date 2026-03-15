@@ -1,8 +1,38 @@
-import { useMemo } from "react";
+import { useMemo, useDeferredValue, useState, memo, useCallback } from "react";
 import { SearchX, Loader2 } from "lucide-react";
 import type { RefObject } from "react";
 import type { ClassItem } from "../types";
 import ClassCard from "./ClassCard";
+
+const StoreChip = memo(function StoreChip({ store, count, isSelected, onSelect }: {
+  store: string; count: number; isSelected: boolean; onSelect: (store: string) => void;
+}) {
+  return (
+    <button
+      onClick={() => onSelect(store)}
+      className={`shrink-0 text-xs px-2.5 py-1 rounded-full border font-medium transition-colors whitespace-nowrap ${
+        isSelected ? "bg-slate-700 text-white border-slate-700" : "bg-white text-slate-500 border-slate-200 hover:border-slate-400"
+      }`}
+    >
+      {store.replace(/^(이마트|롯데마트)\s*/, "")} <span className={isSelected ? "text-slate-300" : "text-slate-400"}>{count}</span>
+    </button>
+  );
+});
+
+const CategoryChip = memo(function CategoryChip({ cat, count, isSelected, onSelect }: {
+  cat: string; count: number; isSelected: boolean; onSelect: (cat: string) => void;
+}) {
+  return (
+    <button
+      onClick={() => onSelect(cat)}
+      className={`shrink-0 text-xs px-2.5 py-1 rounded-full border font-medium transition-colors whitespace-nowrap ${
+        isSelected ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-500 border-slate-200 hover:border-blue-400"
+      }`}
+    >
+      {cat} <span className={isSelected ? "text-blue-200" : "text-slate-400"}>{count}</span>
+    </button>
+  );
+});
 
 interface Props {
   results: ClassItem[];
@@ -13,15 +43,46 @@ interface Props {
   hasMore: boolean;
   sentinelRef: RefObject<HTMLDivElement | null>;
   categorySummary: Record<string, number>;
-  selectedCategory: string | null;
-  onSelectCategory: (cat: string | null) => void;
+  storeSummary: Record<string, number>;
 }
 
-export default function SearchResults({ results, total, loading, loadingMore, searched, hasMore, sentinelRef, categorySummary, selectedCategory, onSelectCategory }: Props) {
-  const topCategories = useMemo(() => Object.entries(categorySummary).slice(0, 10), [categorySummary]);
+export default function SearchResults({ results, total, loading, loadingMore, searched, hasMore, sentinelRef, categorySummary, storeSummary }: Props) {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedStore, setSelectedStore] = useState<string | null>(null);
+
+  const handleSelectStore = useCallback((store: string) => {
+    setSelectedStore((prev) => (prev === store ? null : store));
+    setSelectedCategory(null);
+  }, []);
+
+  const handleSelectCategory = useCallback((cat: string) => {
+    setSelectedCategory((prev) => (prev === cat ? null : cat));
+  }, []);
+
+  const deferredStore = useDeferredValue(selectedStore);
+  const deferredCategory = useDeferredValue(selectedCategory);
+  const topStores = useMemo(() => Object.entries(storeSummary), [storeSummary]);
+
+  // 지점 선택 시 해당 지점 강좌만 기준으로 카테고리 재집계
+  const topCategories = useMemo(() => {
+    const base = deferredStore ? results.filter((r) => r.store_name === deferredStore) : null;
+    if (!base) return Object.entries(categorySummary).slice(0, 10);
+    const summary: Record<string, number> = {};
+    for (const r of base) {
+      const cat = r.category ?? "기타";
+      summary[cat] = (summary[cat] ?? 0) + 1;
+    }
+    return Object.entries(summary).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  }, [deferredStore, results, categorySummary]);
+
   const filtered = useMemo(
-    () => selectedCategory ? results.filter((r) => (r.category ?? "기타") === selectedCategory) : results,
-    [results, selectedCategory]
+    () => {
+      let list = results;
+      if (deferredStore) list = list.filter((r) => r.store_name === deferredStore);
+      if (deferredCategory) list = list.filter((r) => (r.category ?? "기타") === deferredCategory);
+      return list;
+    },
+    [results, deferredStore, deferredCategory]
   );
 
   if (loading) {
@@ -65,21 +126,20 @@ export default function SearchResults({ results, total, loading, loadingMore, se
         총 <span className="text-blue-600 font-semibold">{total.toLocaleString()}개</span> 강좌
       </p>
 
+      {/* 지점 칩 */}
+      {topStores.length > 0 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-none">
+          {topStores.map(([store, count]) => (
+            <StoreChip key={store} store={store} count={count} isSelected={selectedStore === store} onSelect={handleSelectStore} />
+          ))}
+        </div>
+      )}
+
       {/* 카테고리 칩 */}
       {topCategories.length > 0 && (
         <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-none">
           {topCategories.map(([cat, count]) => (
-            <button
-              key={cat}
-              onClick={() => onSelectCategory(selectedCategory === cat ? null : cat)}
-              className={`shrink-0 text-xs px-2.5 py-1 rounded-full border font-medium transition-all whitespace-nowrap ${
-                selectedCategory === cat
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-slate-500 border-slate-200 hover:border-blue-400"
-              }`}
-            >
-              {cat} <span className={selectedCategory === cat ? "text-blue-200" : "text-slate-400"}>{count}</span>
-            </button>
+            <CategoryChip key={cat} cat={cat} count={count} isSelected={selectedCategory === cat} onSelect={handleSelectCategory} />
           ))}
         </div>
       )}

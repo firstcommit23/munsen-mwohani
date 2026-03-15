@@ -43,6 +43,15 @@ function getCategoryEmoji(category: string | null): string {
   return "🎪";
 }
 
+function formatAgeRange(ageRange: string | null): string {
+  if (!ageRange) return "";
+  // 범위 형식 ("5개월 ~ 10개월", "2020~2022년생") — 그대로 표시
+  if (ageRange.includes("~") || ageRange.includes("-")) return ageRange;
+  // 단일 개월수 — 최소 나이(이상)를 의미하므로 "~" 붙여서 표시
+  if (/^\d+개월$/.test(ageRange)) return ageRange + "~";
+  return ageRange;
+}
+
 function parseDays(daysJson: string | null): string {
   if (!daysJson) return "";
   try {
@@ -63,7 +72,7 @@ export default memo(function ClassCard({ item }: Props) {
 
   return (
     <article
-      className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-shadow duration-200 overflow-hidden animate-slide-up cursor-pointer"
+      className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-shadow duration-200 overflow-hidden cursor-pointer"
       onClick={() => item.detail_url && window.open(item.detail_url, "_blank")}
     >
       <div className="flex gap-0">
@@ -114,7 +123,7 @@ export default memo(function ClassCard({ item }: Props) {
           {(item.category || item.age_range) && (
             <p className="text-[11px] text-slate-400 mb-0.5 font-medium">
               {item.category}
-              {item.age_range && <span className="text-purple-400"> · {item.age_range}</span>}
+              {item.age_range && <span className="text-purple-400"> · {formatAgeRange(item.age_range)}</span>}
             </p>
           )}
 

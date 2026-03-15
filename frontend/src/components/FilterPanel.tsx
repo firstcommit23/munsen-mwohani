@@ -35,12 +35,13 @@ export default function FilterPanel({ location, filters, onChange, onSearch, loa
 
   const handleReset = () =>
     onChange({
-      radius: 1,
+      radius: 10,
       targets: [...TARGETS],
       days: [...DAYS],
       timeSlots: [...TIME_SLOTS],
       classTypes: [...CLASS_TYPES],
       keyword: "",
+      babyBirthDate: "",
     });
 
   return (
@@ -78,12 +79,43 @@ export default function FilterPanel({ location, filters, onChange, onSearch, loa
             <Pill
               key={t}
               active={filters.targets.includes(t)}
-              onClick={() => set({ targets: toggle(filters.targets, t) })}
+              onClick={() => {
+                const next = toggle(filters.targets, t);
+                set({ targets: next, babyBirthDate: next.includes("영아") ? filters.babyBirthDate : "" });
+              }}
             >
               {t}
             </Pill>
           ))}
         </FilterRow>
+
+        {/* 아이 생년월일 (영아만 선택된 경우) */}
+        {filters.targets.length === 1 && filters.targets.includes("영아") && (
+          <FilterRow label="생년월">
+            <div className="flex items-center gap-2">
+              <input
+                type="month"
+                value={filters.babyBirthDate}
+                max={new Date().toISOString().slice(0, 7)}
+                onChange={(e) => set({ babyBirthDate: e.target.value })}
+                className="text-xs px-2.5 py-1 rounded-lg border border-slate-200 text-slate-700 bg-white focus:border-blue-400 outline-none transition-colors"
+              />
+              {filters.babyBirthDate && (
+                <span className="text-xs text-purple-500 font-medium">
+                  {(() => {
+                    const [y, m] = filters.babyBirthDate.split("-").map(Number);
+                    const now = new Date();
+                    const months = (now.getFullYear() - y) * 12 + (now.getMonth() + 1 - m);
+                    return months >= 0 ? `${months}개월` : "";
+                  })()}
+                </span>
+              )}
+              {filters.babyBirthDate && (
+                <button onClick={() => set({ babyBirthDate: "" })} className="text-slate-400 hover:text-slate-600 text-xs">✕</button>
+              )}
+            </div>
+          </FilterRow>
+        )}
 
         {/* 요일 */}
         <FilterRow label="요일">

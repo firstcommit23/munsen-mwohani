@@ -1,5 +1,7 @@
+import datetime
 import json
 import math
+import re
 import sqlite3
 import sys
 import os
@@ -49,6 +51,7 @@ def search_classes(
     time_slots: Optional[str] = Query(None, description="시간대: 오전,오후,17시이후"),
     class_types: Optional[str] = Query(None, description="클래스 유형: 정규,원데이"),
     keyword: Optional[str] = Query(None, description="검색어"),
+    baby_months: Optional[int] = Query(None, description="아이 개월수 (영아 나이 필터)"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
@@ -129,6 +132,39 @@ def search_classes(
 
         results.append(r)
 
+    # 아이 개월수 필터 (영아 대상 강좌 중 age_range 매칭)
+    if baby_months is not None:
+        today = datetime.date.today()
+        # 아이 출생연도 계산 (baby_months → birth_year)
+        birth_year = today.year - baby_months // 12
+        if baby_months % 12 > today.month:
+            birth_year -= 1
+
+        def age_matches(age_range: str | None, months: int) -> bool:
+            if not age_range:
+                return False  # age_range 미기재 강좌는 제외
+            # 연도 범위: "2020~2022년생"
+            m = re.search(r"(\d{4})\s*[~\-]\s*(\d{4})\s*년생", age_range)
+            if m:
+                return int(m.group(1)) <= birth_year <= int(m.group(2))
+            # 단일 연도: "2021년생"
+            m = re.search(r"(\d{4})\s*년생", age_range)
+            if m:
+                return int(m.group(1)) == birth_year
+            # 개월수 범위: "5개월 ~ 10개월"
+            m = re.search(r"(\d+)\s*개월?\s*[~\-]\s*(\d+)\s*개월", age_range)
+            if m:
+                return int(m.group(1)) <= months <= int(m.group(2))
+            m = re.search(r"(\d+)\s*[~\-]\s*(\d+)\s*개월", age_range)
+            if m:
+                return int(m.group(1)) <= months <= int(m.group(2))
+            # 단일 개월수: 최소 나이(이상)로 해석
+            m = re.search(r"(\d+)\s*개월", age_range)
+            if m:
+                return months >= int(m.group(1))
+            return False
+        results = [r for r in results if r.get("target") != "영아" or age_matches(r.get("age_range"), baby_months)]
+
     # 거리 기준 정렬
     results.sort(key=lambda x: (x["distance_km"] or 999, x["title"]))
 
@@ -141,10 +177,17 @@ def search_classes(
         category_summary[cat] = category_summary.get(cat, 0) + 1
     category_summary = dict(sorted(category_summary.items(), key=lambda x: -x[1]))
 
+    # 지점별 건수 집계 (전체 결과 기준)
+    store_summary: dict = {}
+    for r in results:
+        name = r.get("store_name") or ""
+        store_summary[name] = store_summary.get(name, 0) + 1
+    store_summary = dict(sorted(store_summary.items(), key=lambda x: -x[1]))
+
     offset = (page - 1) * page_size
     paginated = results[offset: offset + page_size]
 
-    return {"total": total, "page": page, "page_size": page_size, "results": paginated, "category_summary": category_summary}
+    return {"total": total, "page": page, "page_size": page_size, "results": paginated, "category_summary": category_summary, "store_summary": store_summary}
 
 
 @app.get("/api/stores")

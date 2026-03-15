@@ -28,6 +28,7 @@ export interface SearchResponse {
   page_size: number;
   results: ClassItem[];
   category_summary: Record<string, number>;
+  store_summary: Record<string, number>;
 }
 
 export type Target = "성인" | "어린이" | "영아";
@@ -43,6 +44,7 @@ export interface Filters {
   timeSlots: TimeSlot[];
   classTypes: ClassType[];
   keyword: string;
+  babyBirthDate: string; // "YYYY-MM" 형식, 영아 선택 시 사용
 }
 
 export interface UserLocation {

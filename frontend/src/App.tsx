@@ -21,6 +21,7 @@ const DEFAULT_FILTERS: Filters = {
     timeSlots: ['오전', '오후', '17시이후'],
     classTypes: ['정규', '원데이'],
     keyword: '',
+    babyBirthDate: '',
 };
 
 const PAGE_SIZE = 20;
@@ -38,7 +39,9 @@ export default function App() {
     const [error, setError] = useState<string | null>(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [categorySummary, setCategorySummary] = useState<Record<string, number>>({});
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [storeSummary, setStoreSummary] = useState<Record<string, number>>({});
+    const [searchKey, setSearchKey] = useState(0);
+    // searchKey는 SearchResults에 key prop으로 전달되어 검색마다 내부 state 초기화
 
     // 무한 스크롤 감지용 sentinel
     const sentinelRef = useRef<HTMLDivElement>(null);
@@ -63,13 +66,15 @@ export default function App() {
         setSearched(true);
         setPage(1);
         setResults([]);
-        setSelectedCategory(null);
         setCategorySummary({});
+        setStoreSummary({});
+        setSearchKey((k) => k + 1);
         try {
             const data = await searchClasses(location, filters, 1);
             setResults(data.results);
             setTotal(data.total);
             setCategorySummary(data.category_summary ?? {});
+            setStoreSummary(data.store_summary ?? {});
             setHasMore(
                 data.results.length === PAGE_SIZE &&
                     data.results.length < data.total,
@@ -145,6 +150,7 @@ export default function App() {
                 )}
 
                 <SearchResults
+                    key={searchKey}
                     results={results}
                     total={total}
                     loading={loading}
@@ -153,8 +159,7 @@ export default function App() {
                     hasMore={hasMore}
                     sentinelRef={sentinelRef}
                     categorySummary={categorySummary}
-                    selectedCategory={selectedCategory}
-                    onSelectCategory={setSelectedCategory}
+                    storeSummary={storeSummary}
                 />
             </main>
             <Footer />

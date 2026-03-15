@@ -20,6 +20,12 @@ export async function searchClasses(
   if (filters.timeSlots.length) params.time_slots = filters.timeSlots.join(",");
   if (filters.classTypes.length) params.class_types = filters.classTypes.join(",");
   if (filters.keyword.trim()) params.keyword = filters.keyword.trim();
+  if (filters.babyBirthDate && filters.targets.includes("영아")) {
+    const [y, m] = filters.babyBirthDate.split("-").map(Number);
+    const now = new Date();
+    const months = (now.getFullYear() - y) * 12 + (now.getMonth() + 1 - m);
+    if (months >= 0) params.baby_months = months;
+  }
 
   const { data } = await axios.get<SearchResponse>(`${BASE}/api/search`, { params });
   return data;
