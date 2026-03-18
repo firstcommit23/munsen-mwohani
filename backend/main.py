@@ -51,9 +51,10 @@ def search_classes(
     time_slots: Optional[str] = Query(None, description="시간대: 오전,오후,17시이후"),
     class_types: Optional[str] = Query(None, description="클래스 유형: 정규,원데이"),
     keyword: Optional[str] = Query(None, description="검색어"),
+    store_name: Optional[str] = Query(None, description="지점명 필터 (칩 선택 시)"),
     baby_months: Optional[int] = Query(None, description="아이 개월수 (영아 나이 필터)"),
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    page_size: int = Query(20, ge=1, le=1000),
 ):
     conn = get_connection()
     cur = conn.cursor()
@@ -97,6 +98,11 @@ def search_classes(
         query += " AND (c.title LIKE ? OR c.category LIKE ? OR c.description LIKE ?)"
         kw = f"%{keyword.strip()}%"
         params.extend([kw, kw, kw])
+
+    # 5. 지점명 (칩 필터)
+    if store_name and store_name.strip():
+        query += " AND s.name = ?"
+        params.append(store_name.strip())
 
     rows = cur.execute(query, params).fetchall()
     conn.close()

@@ -41,7 +41,9 @@ export default function App() {
     const [categorySummary, setCategorySummary] = useState<Record<string, number>>({});
     const [storeSummary, setStoreSummary] = useState<Record<string, number>>({});
     const [searchKey, setSearchKey] = useState(0);
-    // searchKey는 SearchResults에 key prop으로 전달되어 검색마다 내부 state 초기화
+    const [selectedStore, setSelectedStore] = useState<string | null>(null);
+    const [storeResults, setStoreResults] = useState<ClassItem[]>([]);
+    const [chipLoading, setChipLoading] = useState(false);
 
     // 무한 스크롤 감지용 sentinel
     const sentinelRef = useRef<HTMLDivElement>(null);
@@ -69,6 +71,8 @@ export default function App() {
         setCategorySummary({});
         setStoreSummary({});
         setSearchKey((k) => k + 1);
+        setSelectedStore(null);
+        setStoreResults([]);
         try {
             const data = await searchClasses(location, filters, 1);
             setResults(data.results);
@@ -91,9 +95,27 @@ export default function App() {
         }
     }, [location, filters]);
 
+    // 지점 칩 선택 — 서버에서 해당 지점 전체 강좌 로드
+    const handleStoreSelect = useCallback(async (store: string | null) => {
+        setSelectedStore(store);
+        if (!store) {
+            setStoreResults([]);
+            return;
+        }
+        setChipLoading(true);
+        try {
+            const data = await searchClasses(location, filters, 1, store, 500);
+            setStoreResults(data.results);
+        } catch {
+            setStoreResults(results.filter((r) => r.store_name === store));
+        } finally {
+            setChipLoading(false);
+        }
+    }, [location, filters, results]);
+
     // 추가 페이지 로드
     const loadMore = useCallback(async () => {
-        if (loadingMore || !hasMore) return;
+        if (loadingMore || !hasMore || selectedStore) return;
         setLoadingMore(true);
         const nextPage = page + 1;
         try {
@@ -109,7 +131,7 @@ export default function App() {
         } finally {
             setLoadingMore(false);
         }
-    }, [loadingMore, hasMore, page, location, filters, results.length]);
+    }, [loadingMore, hasMore, selectedStore, page, location, filters, results.length]);
 
     // 스크롤 위치 감지 — 300px 이상 내려가면 위로 가기 버튼 표시
     useEffect(() => {
@@ -151,15 +173,18 @@ export default function App() {
 
                 <SearchResults
                     key={searchKey}
-                    results={results}
+                    results={selectedStore ? storeResults : results}
                     total={total}
                     loading={loading}
                     loadingMore={loadingMore}
                     searched={searched}
-                    hasMore={hasMore}
+                    hasMore={selectedStore ? false : hasMore}
                     sentinelRef={sentinelRef}
                     categorySummary={categorySummary}
                     storeSummary={storeSummary}
+                    selectedStore={selectedStore}
+                    onSelectStore={handleStoreSelect}
+                    chipLoading={chipLoading}
                 />
             </main>
             <Footer />
